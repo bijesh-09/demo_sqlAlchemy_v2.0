@@ -115,10 +115,14 @@ with Session(engine) as session:
     print("inserting extra user: ")
     session.execute(insert(User).values(name="ExtraUser", fullname="extraFullname"))
 
-    final_stmt = select(User.name, Address).where(User.id == Address.user_id)
+    final_stmt = select(User.name, Address).where(User.id == Address.user_id).order_by(Address.id)
     print("final stmt: ", final_stmt)
     final_result = session.execute(final_stmt).all()
     print("final_result: ", final_result)
 
+    #labelling i.e. AS operator in SQL
+    stmt = select(("Username: " + User.name).label("username")).order_by("username") #here the label "username" is being used for order_by
+    labeled_result = session.execute(stmt).all()
+    print("labeled_result: ", labeled_result)
 
 Base.metadata.create_all(engine)

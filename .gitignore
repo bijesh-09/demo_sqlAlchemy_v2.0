@@ -2,3 +2,5 @@ venv/
 venv
 .agents
 .codex
+__pycache__/
+*.py[cod]
