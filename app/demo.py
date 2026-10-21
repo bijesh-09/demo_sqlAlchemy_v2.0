@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, Table, MetaData
 from sqlalchemy.orm import Session
 
 # ':memory:' means in-memory db, 
@@ -63,7 +63,7 @@ with engine.begin() as conn:
     #ways to access the result
     #note: only the first for loop will run since it will exhaust the 'result' one shot stream object
 
-    # tuple assignment
+    # tuple assignment or unpacking tuple
     for x, y in result:
         print(f"x: {x}, y: {y}")
 
@@ -126,3 +126,8 @@ with Session(engine) as session:
         [{"x": 9, "y": 11}, {"x": 13, "y": 15}],
     )
     session.commit()
+
+# Table reflection refers to the process of generating Table and related objects by reading the current state of a database
+some_metadata = MetaData()
+reflected_some_table = Table("some_table", some_metadata, autoload_with=engine) #the engine is connected to existing db "some_table"
+print(repr(reflected_some_table))
