@@ -1,5 +1,5 @@
 from app.models import Base, User, Address
-from sqlalchemy import create_engine, select, insert
+from sqlalchemy import create_engine, select, insert, and_, or_, func, desc 
 from sqlalchemy.orm import Session
 
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
@@ -38,6 +38,120 @@ print(squidward.id, krabs.id)
 
 some_squidward = session.get(User, 1) # p_key of object is tied with session, so session.get returns the object with that p_key if already loaded in memory, if not it fetched from db
 print(some_squidward.id, some_squidward.name, some_squidward.fullname)
+
+
+
+# where clause for multiple conditions:
+print("------------------------------WHERE----------------------------")
+multiple_where = session.scalars(select(Address.email_address)
+                                 .where(User.name == "squidward")
+                                 .where(Address.user_id == User.id)).first()
+#the query defaults to AND operation for condns in multiple .where():
+# SELECT addr.email_address FROM addr, user_acc 
+# WHERE user_acc.name = ? AND addr.user_id = user_acc.id
+print("multiple conditions in where clause: ", multiple_where)
+
+# and_() or_() in .where()  
+print(select(Address.email_address).where(
+    and_(
+        or_(User.name == "sandy", User.name == "squidward"),
+        Address.user_id == User.id
+    )
+))
+#output:
+# SELECT addr.email_address FROM addr, user_acc 
+# WHERE (user_acc.name = :name_1 OR user_acc.name = :name_2) AND addr.user_id = user_acc.id
+
+print(
+    select(Address.email_address).where(
+        or_(
+            User.name == "squidward",
+            and_(Address.user_id == User.id, User.name == "sandy"),
+        )
+    )
+)
+# ouput: NOTICE HERE, how there is no bracket betwn the AND operands cuz AND has higher operator precedence than OR in sql
+# SELECT addr.email_address FROM addr, user_acc 
+# WHERE user_acc.name = :name_1 OR addr.user_id = user_acc.id AND user_acc.name = :name_2
+
+print("--------------------------------------------------------------")
+
+
+#joins
+print("------------------------------JOINS----------------------------")
+
+result_join = session.execute(select(User.name, Address.email_address)).all()
+print("select from multiple tables(cartesian product): ", result_join) #SELECT user_acc.name, addr.email_address FROM user_acc, addr
+
+# .join_from() specifies both left and right hand side of join
+#SELECT user_acc.name, addr.email_address FROM user_acc JOIN addr ON user_acc.id = addr.user_id
+result_join = session.execute(select(User.name, Address.email_address).join_from(User, Address)).all()
+print(".join_from() both LHS and RHS: ", result_join) 
+
+#NOTE: the "ON user_acc.id = addr.user_id" is auto done since our addr.user_id refs to user_acc.id
+
+# .join_from() specifies only the right hand side of join, while LHS is inferred
+#SELECT user_acc.name, addr.email_address FROM user_acc JOIN addr ON user_acc.id = addr.user_id
+result_join = session.execute(select(User.name, Address.email_address).join(Address)).all()
+print(".join(), only RHS, LHS inferred: ", result_join)
+
+# UP TO HERE, sqlalchemy was auto inferring the tables and ON clause, but some cases are where we want to explicitly 
+# join ourselves, and where alchemy cant infer witth its guess, eg:
+
+result_join = session.execute(select(Address.email_address).select_from(User).join(Address)).all()
+print(".select_from() eg: ", result_join)
+
+result_join = session.scalars(select(func.count("*")).select_from(User)).all()
+print(".select_from() for aggregation fns: ", result_join)
+
+#UP TO HERE, alchemy auto inferred the ON clause, but we ve to explicitly give the condns for ON clause when there is no
+#  f_key constraint or multiple f_key constraints
+
+print("explicit on clause with .join(): ", select(Address.email_address).select_from(User).join(
+    Address, User.id == Address.user_id
+))
+
+print("explicit on clause with .join_from(): ", select(Address.email_address).join_from(
+    User, Address, User.id == Address.user_id
+))
+
+#outer and full joins
+print("outer join: ", select(Address.email_address).select_from(User).join(
+    Address, isouter=True # the isOuter defaults to LEFT OUTER JOIN
+))
+print("full join: ", select(Address.email_address).select_from(User).join(
+    Address, full=True 
+))
+print("--------------------------------------------------------------")
+
+
+
+#order by, group_by, having
+print("------------------------------order by, group_by, having----------------------------")
+
+print("order_by: ", select(User).order_by(
+    User.name, 
+    User.fullname.desc() # here User.fullname is Tie Breaker, and it'll be used only when the User.name happens to be same
+    # the desc() sorts in descending order, while the .asc() is the default
+))
+result_groupBy = session.execute(
+    select(User.name, func.count(Address.id).label("address_count"))
+                           .join(Address)
+                           .group_by(User.name)
+                           .having(func.count(Address.id) > 1)
+).all()
+print("users with more than one address: ", result_groupBy)
+
+# ordering and grouping by label
+print(
+    select(Address.user_id, func.count(Address.id).label("num_addresses")) # here in SELECT clause, there are two expns that we can refer to: Address.user_id and num_addresses
+    .join(User, User.id == Address.id)
+    .group_by(  "user_id") # referring to Address.user_id 
+    .order_by("user_id", desc("num_addresses")) # referring to Address.user_id and num_addresses
+)
+
+print("--------------------------------------------------------------")
+
 
 session.commit()
 
