@@ -41,6 +41,9 @@ class User(Base):
 
     addresses: Mapped[List["Address"]] = relationship(back_populates="user")
 
+    def __repr__(self):
+        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})" # !r means call repr() eg: self.id!r means repr(self.id)
+
 class Address(Base):
     __tablename__ = "addr"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -48,6 +51,9 @@ class Address(Base):
     user_id: Mapped[int]  = mapped_column(ForeignKey("user_acc.id"))
 
     user: Mapped["User"] = relationship(back_populates="addresses")
+
+    def __repr__(self):
+        return f"Address(id={self.id!r}, email_address={self.email_address!r}, user_id={self.user_id!r}, user={self.user!r})" 
 
 
 # without using Mapped type annotations
