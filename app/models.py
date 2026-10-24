@@ -39,7 +39,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(30))
     fullname: Mapped[Optional[str]]
 
-    addresses: Mapped[List["Address"]] = relationship(back_populates="user")
+    # addresses: Mapped[List["Address"]] = relationship(back_populates="user")
+    # addresses: Mapped[List["Address"]] = relationship(back_populates="user", lazy="selectin") # another method for selectin loading strategy
+    addresses: Mapped[List["Address"]] = relationship(back_populates="user", lazy="raise_on_sql")
 
     def __repr__(self):
         return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})" # !r means call repr() eg: self.id!r means repr(self.id)
@@ -50,7 +52,7 @@ class Address(Base):
     email_address: Mapped[str]
     user_id: Mapped[int]  = mapped_column(ForeignKey("user_acc.id"))
 
-    user: Mapped["User"] = relationship(back_populates="addresses")
+    user: Mapped["User"] = relationship(back_populates="addresses", lazy="raise_on_sql")
 
     def __repr__(self):
         return f"Address(id={self.id!r}, email_address={self.email_address!r}, user_id={self.user_id!r}, user={self.user!r})" 
