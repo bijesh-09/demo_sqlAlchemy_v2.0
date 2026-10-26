@@ -1,4 +1,4 @@
-from app.models import metadata_obj, Base, user_table, address_table, User, Address
+from alchemy_v2.models import metadata_obj, Base, user_table, address_table, User, Address
 from sqlalchemy import create_engine, select, insert
 from sqlalchemy.orm import Session
 

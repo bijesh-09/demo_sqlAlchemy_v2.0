@@ -1,4 +1,4 @@
-from app.models import Base, User, Address
+from alchemy_v2.models import Base, User, Address
 from sqlalchemy import create_engine, select, insert
 from sqlalchemy.orm import Session, selectinload, joinedload, contains_eager
 

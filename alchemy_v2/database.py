@@ -1,4 +1,4 @@
-from app.models import metadata_obj, Base, user_table, address_table
+from alchemy_v2.models import metadata_obj, Base, user_table, address_table
 from sqlalchemy import create_engine, insert, select
 
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
